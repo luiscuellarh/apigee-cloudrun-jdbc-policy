@@ -1,0 +1,782 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/apigee/apigee-templater/main/schema/gateway.schema.1.0.json
+name: __POLICY_PROXY_NAME__
+displayName: __POLICY_PROXY_NAME__
+type: proxy
+gateway: apigee
+schemaVersion: 1.0.0
+description: Business API Proxy executing SQL queries via ServiceCallout against persistent Cloud Run connection pools, using jdbc.properties PropertySet to select the target datasource_id.
+
+endpoints:
+  - name: default
+    basePath: __POLICY_BASE_PATH__
+    routes:
+      - name: NoTarget
+    flows:
+      # Flow 1: Query Subscriber by ID (GET /v1/jdbc-policy/subscribers?id=1001)
+      # Target DB is resolved from {propertyset.jdbc.datasource_id} (enterprise-sqlite)
+      - name: Query-Subscriber-By-ID
+        mode: Request
+        condition: (proxy.pathsuffix MatchesPath "/subscribers") and (request.verb = "GET")
+        steps:
+          - name: SC-JDBC-Query-Subscriber
+          - name: RF-Connector-Unavailable
+            condition: (jdbc.callout.response.status.code = null)
+          - name: EV-JDBC-Context-Variables
+            condition: (jdbc.callout.response.content != null) and (jdbc.callout.response.content != "")
+          - name: RF-JDBC-Policy-Failed
+            condition: (jdbc.callout.response.status.code != 200) or (jdbc.success = false)
+          - name: AM-Inject-JDBC-Headers
+            condition: (jdbc.callout.response.status.code = 200)
+
+      # Flow 2: Create Order via Parameterized DML Transaction (POST /v1/jdbc-policy/orders)
+      # Target DB is resolved from {propertyset.jdbc.datasource_id} (enterprise-sqlite)
+      - name: Create-Order-DML
+        mode: Request
+        condition: (proxy.pathsuffix MatchesPath "/orders") and (request.verb = "POST")
+        steps:
+          - name: EV-Extract-Order-Request
+            condition: (request.content != null) and (request.content != "")
+          - name: SC-JDBC-Insert-Order
+          - name: RF-Connector-Unavailable
+            condition: (jdbc.callout.response.status.code = null)
+          - name: EV-JDBC-Context-Variables
+            condition: (jdbc.callout.response.content != null) and (jdbc.callout.response.content != "")
+          - name: RF-JDBC-Policy-Failed
+            condition: (jdbc.callout.response.status.code != 200) or (jdbc.success = false)
+          - name: AM-Inject-JDBC-Headers
+            condition: (jdbc.callout.response.status.code = 200)
+
+      # Flow 3: Query Live External PostgreSQL Database (GET /v1/jdbc-policy/rna?upi=URS0000000001)
+      # Target DB is resolved from {propertyset.jdbc.external_datasource_id} (pg-rna-public)
+      - name: Query-External-Postgres-RNA
+        mode: Request
+        condition: (proxy.pathsuffix MatchesPath "/rna") and (request.verb = "GET")
+        steps:
+          - name: SC-JDBC-Query-External-Postgres
+          - name: RF-Connector-Unavailable
+            condition: (jdbc.callout.response.status.code = null)
+          - name: EV-JDBC-Context-Variables
+            condition: (jdbc.callout.response.content != null) and (jdbc.callout.response.content != "")
+          - name: RF-JDBC-Policy-Failed
+            condition: (jdbc.callout.response.status.code != 200) or (jdbc.success = false)
+          - name: AM-Inject-JDBC-Headers
+            condition: (jdbc.callout.response.status.code = 200)
+
+      # Flow 3B: Multi-Row / Large SELECT with max_rows Cap & truncated Flag
+      # (GET /v1/jdbc-policy/rna-search?rna_type=rRNA)
+      - name: Search-External-Postgres-MultiRow
+        mode: Request
+        condition: (proxy.pathsuffix MatchesPath "/rna-search") and (request.verb = "GET")
+        steps:
+          - name: SC-JDBC-Search-External-Postgres-MultiRow
+          - name: RF-Connector-Unavailable
+            condition: (jdbc.callout.response.status.code = null)
+          - name: EV-JDBC-Context-Variables
+            condition: (jdbc.callout.response.content != null) and (jdbc.callout.response.content != "")
+          - name: RF-JDBC-Policy-Failed
+            condition: (jdbc.callout.response.status.code != 200) or (jdbc.success = false)
+          - name: AM-Inject-JDBC-Headers
+            condition: (jdbc.callout.response.status.code = 200)
+
+      # Flow 4: Query Optional Private Compute Engine PostgreSQL VM over Direct VPC Egress
+      # (GET /v1/jdbc-policy/private-vm-accounts?account_id=ACC-9001)
+      # Target DB is resolved from {propertyset.jdbc.private_vm_datasource_id} (private-vm-postgres)
+      - name: Query-Private-VM-Postgres
+        mode: Request
+        condition: (proxy.pathsuffix MatchesPath "/private-vm-accounts") and (request.verb = "GET")
+        steps:
+          - name: SC-JDBC-Query-Private-VM
+          - name: RF-Connector-Unavailable
+            condition: (jdbc.callout.response.status.code = null)
+          - name: EV-JDBC-Context-Variables
+            condition: (jdbc.callout.response.content != null) and (jdbc.callout.response.content != "")
+          - name: RF-JDBC-Policy-Failed
+            condition: (jdbc.callout.response.status.code != 200) or (jdbc.success = false)
+          - name: AM-Inject-JDBC-Headers
+            condition: (jdbc.callout.response.status.code = 200)
+
+      # Response PostFlow: Returns populated Apigee JDBC context variables & injected headers
+      - name: PostFlow
+        mode: Response
+        steps:
+          - name: AM-Default-Empty-Rows
+            condition: (jdbc.rows_json = null) or (jdbc.rows_json = "")
+          - name: AM-Build-Response
+
+policies:
+  # 1A. ServiceCallout: SELECT Subscriber using {propertyset.jdbc.datasource_id}
+  - name: SC-JDBC-Query-Subscriber
+    type: ServiceCallout
+    content:
+      ServiceCallout:
+        _attributes:
+          async: "false"
+          continueOnError: "true"
+          enabled: "true"
+          name: SC-JDBC-Query-Subscriber
+        DisplayName:
+          _text: SC-JDBC-Query-Subscriber
+        Request:
+          _attributes:
+            clearPayload: "true"
+            variable: jdbc.callout.request
+          IgnoreUnresolvedVariables:
+            _text: "true"
+          Set:
+            Headers:
+              Header:
+                _attributes:
+                  name: Content-Type
+                _text: application/json
+            Payload:
+              _attributes:
+                contentType: application/json
+              _text: |
+                {
+                  "datasource_id": "{propertyset.jdbc.datasource_id}",
+                  "variable_prefix": "{propertyset.jdbc.variable_prefix}",
+                  "max_rows": 10,
+                  "fail_if_empty": true,
+                  "sql": "SELECT id, external_id, full_name, email, segment, plan_tier, status, credit_limit FROM subscribers WHERE id = $[id]",
+                  "params": {
+                    "id": "{request.queryparam.id}"
+                  }
+                }
+            Verb:
+              _text: POST
+        Response:
+          _text: jdbc.callout.response
+        Timeout:
+          _text: "10000"
+        HTTPTargetConnection:
+          Authentication:
+            GoogleIDToken:
+              Audience:
+                _text: __CUSTOM_AUDIENCE__
+          Properties:
+            Property:
+              - _attributes:
+                  name: keepalive.timeout.millis
+                _text: "60000"
+              - _attributes:
+                  name: success.codes
+                _text: 2xx,4xx,5xx
+          URL:
+            _text: __CLOUD_RUN_URL__/v1/jdbc/query
+
+  # 1B. Extract Order Request Body Fields for Parameterized DML Insert
+  - name: EV-Extract-Order-Request
+    type: ExtractVariables
+    content:
+      ExtractVariables:
+        _attributes:
+          async: "false"
+          continueOnError: "false"
+          enabled: "true"
+          name: EV-Extract-Order-Request
+        DisplayName:
+          _text: EV-Extract-Order-Request
+        Source:
+          _attributes:
+            clearPayload: "false"
+          _text: request
+        IgnoreUnresolvedVariables:
+          _text: "true"
+        JSONPayload:
+          Variable:
+            - _attributes:
+                name: order.subscriber_id
+                type: string
+              JSONPath:
+                _text: $.subscriber_id
+            - _attributes:
+                name: order.sku
+                type: string
+              JSONPath:
+                _text: $.sku
+            - _attributes:
+                name: order.amount
+                type: string
+              JSONPath:
+                _text: $.amount
+            - _attributes:
+                name: order.currency
+                type: string
+              JSONPath:
+                _text: $.currency
+
+  # 1C. ServiceCallout: INSERT Order DML with Transaction using {propertyset.jdbc.datasource_id}
+  - name: SC-JDBC-Insert-Order
+    type: ServiceCallout
+    content:
+      ServiceCallout:
+        _attributes:
+          async: "false"
+          continueOnError: "true"
+          enabled: "true"
+          name: SC-JDBC-Insert-Order
+        DisplayName:
+          _text: SC-JDBC-Insert-Order
+        Request:
+          _attributes:
+            clearPayload: "true"
+            variable: jdbc.callout.request
+          IgnoreUnresolvedVariables:
+            _text: "true"
+          Set:
+            Headers:
+              Header:
+                _attributes:
+                  name: Content-Type
+                _text: application/json
+            Payload:
+              _attributes:
+                contentType: application/json
+              _text: |
+                {
+                  "datasource_id": "{propertyset.jdbc.datasource_id}",
+                  "variable_prefix": "{propertyset.jdbc.variable_prefix}",
+                  "use_transaction": true,
+                  "sql": "INSERT INTO orders (subscriber_id, sku, amount, currency, order_status, updated_at) VALUES ($[subscriber_id], $[sku], $[amount], $[currency], 'PROVISIONED', datetime('now'))",
+                  "params": {
+                    "subscriber_id": "{order.subscriber_id}",
+                    "sku": "{order.sku}",
+                    "amount": "{order.amount}",
+                    "currency": "{order.currency}"
+                  }
+                }
+            Verb:
+              _text: POST
+        Response:
+          _text: jdbc.callout.response
+        Timeout:
+          _text: "10000"
+        HTTPTargetConnection:
+          Authentication:
+            GoogleIDToken:
+              Audience:
+                _text: __CUSTOM_AUDIENCE__
+          Properties:
+            Property:
+              - _attributes:
+                  name: keepalive.timeout.millis
+                _text: "60000"
+              - _attributes:
+                  name: success.codes
+                _text: 2xx,4xx,5xx
+          URL:
+            _text: __CLOUD_RUN_URL__/v1/jdbc/execute
+
+  # 1D. ServiceCallout: Query Live External PostgreSQL DB using {propertyset.jdbc.external_datasource_id}
+  - name: SC-JDBC-Query-External-Postgres
+    type: ServiceCallout
+    content:
+      ServiceCallout:
+        _attributes:
+          async: "false"
+          continueOnError: "true"
+          enabled: "true"
+          name: SC-JDBC-Query-External-Postgres
+        DisplayName:
+          _text: SC-JDBC-Query-External-Postgres
+        Request:
+          _attributes:
+            clearPayload: "true"
+            variable: jdbc.callout.request
+          IgnoreUnresolvedVariables:
+            _text: "true"
+          Set:
+            Headers:
+              Header:
+                _attributes:
+                  name: Content-Type
+                _text: application/json
+            Payload:
+              _attributes:
+                contentType: application/json
+              _text: |
+                {
+                  "datasource_id": "{propertyset.jdbc.external_datasource_id}",
+                  "variable_prefix": "{propertyset.jdbc.variable_prefix}",
+                  "max_rows": 5,
+                  "fail_if_empty": true,
+                  "sql": "SELECT urs AS upi, urs_taxid AS crc64, rna_type || ': ' || description AS seq_short FROM rnc_rna_precomputed WHERE urs = $[upi] LIMIT 1",
+                  "params": {
+                    "upi": "{request.queryparam.upi}"
+                  }
+                }
+            Verb:
+              _text: POST
+        Response:
+          _text: jdbc.callout.response
+        Timeout:
+          _text: "15000"
+        HTTPTargetConnection:
+          Authentication:
+            GoogleIDToken:
+              Audience:
+                _text: __CUSTOM_AUDIENCE__
+          Properties:
+            Property:
+              - _attributes:
+                  name: keepalive.timeout.millis
+                _text: "60000"
+              - _attributes:
+                  name: success.codes
+                _text: 2xx,4xx,5xx
+          URL:
+            _text: __CLOUD_RUN_URL__/v1/jdbc/query
+
+  # 1E. ServiceCallout: Multi-Row SELECT with max_rows Cap & truncated Detection
+  - name: SC-JDBC-Search-External-Postgres-MultiRow
+    type: ServiceCallout
+    content:
+      ServiceCallout:
+        _attributes:
+          async: "false"
+          continueOnError: "true"
+          enabled: "true"
+          name: SC-JDBC-Search-External-Postgres-MultiRow
+        DisplayName:
+          _text: SC-JDBC-Search-External-Postgres-MultiRow
+        Request:
+          _attributes:
+            clearPayload: "true"
+            variable: jdbc.callout.request
+          IgnoreUnresolvedVariables:
+            _text: "true"
+          Set:
+            Headers:
+              Header:
+                _attributes:
+                  name: Content-Type
+                _text: application/json
+            Payload:
+              _attributes:
+                contentType: application/json
+              _text: |
+                {
+                  "datasource_id": "{propertyset.jdbc.external_datasource_id}",
+                  "variable_prefix": "{propertyset.jdbc.variable_prefix}",
+                  "max_rows": 3,
+                  "fail_if_empty": true,
+                  "sql": "SELECT urs AS upi, urs_taxid AS crc64, rna_type, description AS seq_short FROM rnc_rna_precomputed WHERE rna_type = $[rna_type] LIMIT 10",
+                  "params": {
+                    "rna_type": "{request.queryparam.rna_type}"
+                  }
+                }
+            Verb:
+              _text: POST
+        Response:
+          _text: jdbc.callout.response
+        Timeout:
+          _text: "15000"
+        HTTPTargetConnection:
+          Authentication:
+            GoogleIDToken:
+              Audience:
+                _text: __CUSTOM_AUDIENCE__
+          Properties:
+            Property:
+              - _attributes:
+                  name: keepalive.timeout.millis
+                _text: "60000"
+              - _attributes:
+                  name: success.codes
+                _text: 2xx,4xx,5xx
+          URL:
+            _text: __CLOUD_RUN_URL__/v1/jdbc/query
+
+  # 1F. ServiceCallout: Query Optional Private Compute Engine Postgres VM using {propertyset.jdbc.private_vm_datasource_id}
+  - name: SC-JDBC-Query-Private-VM
+    type: ServiceCallout
+    content:
+      ServiceCallout:
+        _attributes:
+          async: "false"
+          continueOnError: "true"
+          enabled: "true"
+          name: SC-JDBC-Query-Private-VM
+        DisplayName:
+          _text: SC-JDBC-Query-Private-VM
+        Request:
+          _attributes:
+            clearPayload: "true"
+            variable: jdbc.callout.request
+          IgnoreUnresolvedVariables:
+            _text: "true"
+          Set:
+            Headers:
+              Header:
+                _attributes:
+                  name: Content-Type
+                _text: application/json
+            Payload:
+              _attributes:
+                contentType: application/json
+              _text: |
+                {
+                  "datasource_id": "{propertyset.jdbc.private_vm_datasource_id}",
+                  "variable_prefix": "{propertyset.jdbc.variable_prefix}",
+                  "max_rows": 10,
+                  "fail_if_empty": true,
+                  "sql": "SELECT account_id, company_name, region, balance_eur, tier FROM billing_accounts WHERE account_id = $[account_id]",
+                  "params": {
+                    "account_id": "{request.queryparam.account_id}"
+                  }
+                }
+            Verb:
+              _text: POST
+        Response:
+          _text: jdbc.callout.response
+        Timeout:
+          _text: "10000"
+        HTTPTargetConnection:
+          Authentication:
+            GoogleIDToken:
+              Audience:
+                _text: __CUSTOM_AUDIENCE__
+          Properties:
+            Property:
+              - _attributes:
+                  name: keepalive.timeout.millis
+                _text: "60000"
+              - _attributes:
+                  name: success.codes
+                _text: 2xx,4xx,5xx
+          URL:
+            _text: __CLOUD_RUN_URL__/v1/jdbc/query
+
+  # 2. RaiseFault: Transport Timeout / Cloud Run Unreachable (status.code = null)
+  - name: RF-Connector-Unavailable
+    type: RaiseFault
+    content:
+      RaiseFault:
+        _attributes:
+          async: "false"
+          continueOnError: "false"
+          enabled: "true"
+          name: RF-Connector-Unavailable
+        DisplayName:
+          _text: RF-Connector-Unavailable
+        FaultResponse:
+          Set:
+            Headers:
+              Header:
+                _attributes:
+                  name: Content-Type
+                _text: application/json
+            Payload:
+              _attributes:
+                contentType: application/json
+              _text: |
+                {
+                  "error": "jdbc_connector_unavailable",
+                  "error_code": "CONNECTOR_UNREACHABLE",
+                  "message": "Private Cloud Run JDBC connector did not respond within timeout"
+                }
+            StatusCode:
+              _text: "503"
+        IgnoreUnresolvedVariables:
+          _text: "true"
+
+  # 3. ExtractVariables: Maps Cloud Run JSON Output into Apigee Flow Variables
+  - name: EV-JDBC-Context-Variables
+    type: ExtractVariables
+    content:
+      ExtractVariables:
+        _attributes:
+          async: "false"
+          continueOnError: "false"
+          enabled: "true"
+          name: EV-JDBC-Context-Variables
+        DisplayName:
+          _text: EV-JDBC-Context-Variables
+        Source:
+          _attributes:
+            clearPayload: "false"
+          _text: jdbc.callout.response
+        VariablePrefix:
+          _text: jdbc
+        IgnoreUnresolvedVariables:
+          _text: "true"
+        JSONPayload:
+          Variable:
+            - _attributes:
+                name: datasource_id
+                type: string
+              JSONPath:
+                _text: $.datasource_id
+            - _attributes:
+                name: driver
+                type: string
+              JSONPath:
+                _text: $.driver
+            - _attributes:
+                name: operation_type
+                type: string
+              JSONPath:
+                _text: $.operation_type
+            - _attributes:
+                name: success
+                type: boolean
+              JSONPath:
+                _text: $.success
+            - _attributes:
+                name: row_count
+                type: string
+              JSONPath:
+                _text: $.row_count
+            - _attributes:
+                name: truncated
+                type: string
+              JSONPath:
+                _text: $.truncated
+            - _attributes:
+                name: last_insert_id
+                type: string
+              JSONPath:
+                _text: $.last_insert_id
+            - _attributes:
+                name: execution_time_ms
+                type: string
+              JSONPath:
+                _text: $.execution_time_ms
+            - _attributes:
+                name: full_name
+                type: string
+              JSONPath:
+                _text: $.first_row.full_name
+            - _attributes:
+                name: email
+                type: string
+              JSONPath:
+                _text: $.first_row.email
+            - _attributes:
+                name: plan_tier
+                type: string
+              JSONPath:
+                _text: $.first_row.plan_tier
+            - _attributes:
+                name: status
+                type: string
+              JSONPath:
+                _text: $.first_row.status
+            - _attributes:
+                name: upi
+                type: string
+              JSONPath:
+                _text: $.first_row.upi
+            - _attributes:
+                name: crc64
+                type: string
+              JSONPath:
+                _text: $.first_row.crc64
+            - _attributes:
+                name: seq_short
+                type: string
+              JSONPath:
+                _text: $.first_row.seq_short
+            - _attributes:
+                name: account_id
+                type: string
+              JSONPath:
+                _text: $.first_row.account_id
+            - _attributes:
+                name: company_name
+                type: string
+              JSONPath:
+                _text: $.first_row.company_name
+            - _attributes:
+                name: balance_eur
+                type: string
+              JSONPath:
+                _text: $.first_row.balance_eur
+            - _attributes:
+                name: rows_json
+                type: nodeset
+              JSONPath:
+                _text: $.rows
+            - _attributes:
+                name: error_code
+                type: string
+              JSONPath:
+                _text: $.error_code
+            - _attributes:
+                name: error_message
+                type: string
+              JSONPath:
+                _text: $.message
+
+  # 4. RaiseFault: Blocks Request When SQL Policy Fails (400 / 403 / 404 / 422 / 504)
+  - name: RF-JDBC-Policy-Failed
+    type: RaiseFault
+    content:
+      RaiseFault:
+        _attributes:
+          async: "false"
+          continueOnError: "false"
+          enabled: "true"
+          name: RF-JDBC-Policy-Failed
+        DisplayName:
+          _text: RF-JDBC-Policy-Failed
+        FaultResponse:
+          Set:
+            Headers:
+              Header:
+                _attributes:
+                  name: Content-Type
+                _text: application/json
+            Payload:
+              _attributes:
+                contentType: application/json
+              _text: |
+                {
+                  "error": "jdbc_policy_rejection",
+                  "datasource_id": "{jdbc.datasource_id}",
+                  "error_code": "{jdbc.error_code}",
+                  "message": "{jdbc.error_message}"
+                }
+            StatusCode:
+              _text: "{jdbc.callout.response.status.code}"
+        IgnoreUnresolvedVariables:
+          _text: "true"
+
+  # 5. AssignMessage: Injects Extracted JDBC Columns as Upstream Headers (X-JDBC-*)
+  - name: AM-Inject-JDBC-Headers
+    type: AssignMessage
+    content:
+      AssignMessage:
+        _attributes:
+          async: "false"
+          continueOnError: "false"
+          enabled: "true"
+          name: AM-Inject-JDBC-Headers
+        DisplayName:
+          _text: AM-Inject-JDBC-Headers
+        Set:
+          Headers:
+            Header:
+              - _attributes:
+                  name: X-JDBC-Datasource
+                _text: "{jdbc.datasource_id}"
+              - _attributes:
+                  name: X-JDBC-Driver
+                _text: "{jdbc.driver}"
+              - _attributes:
+                  name: X-JDBC-Row-Count
+                _text: "{jdbc.row_count}"
+              - _attributes:
+                  name: X-JDBC-Subscriber-Name
+                _text: "{jdbc.full_name}"
+              - _attributes:
+                  name: X-JDBC-Subscriber-Email
+                _text: "{jdbc.email}"
+              - _attributes:
+                  name: X-JDBC-Plan-Tier
+                _text: "{jdbc.plan_tier}"
+        IgnoreUnresolvedVariables:
+          _text: "true"
+        AssignTo:
+          _attributes:
+            createNew: "false"
+            transport: http
+            type: request
+
+  # 5B. AssignMessage: Default jdbc.rows_json to [] for DML statements that return no rows
+  - name: AM-Default-Empty-Rows
+    type: AssignMessage
+    content:
+      AssignMessage:
+        _attributes:
+          async: "false"
+          continueOnError: "false"
+          enabled: "true"
+          name: AM-Default-Empty-Rows
+        DisplayName:
+          _text: AM-Default-Empty-Rows
+        AssignVariable:
+          Name:
+            _text: jdbc.rows_json
+          Value:
+            _text: "[]"
+        IgnoreUnresolvedVariables:
+          _text: "true"
+
+  # 6. AssignMessage: Builds Enriched JSON Response Demonstrating Extracted Context Variables
+  - name: AM-Build-Response
+    type: AssignMessage
+    content:
+      AssignMessage:
+        _attributes:
+          async: "false"
+          continueOnError: "false"
+          enabled: "true"
+          name: AM-Build-Response
+        DisplayName:
+          _text: AM-Build-Response
+        Set:
+          Headers:
+            Header:
+              _attributes:
+                name: Content-Type
+              _text: application/json
+          Payload:
+            _attributes:
+              contentType: application/json
+            _text: |
+              {
+                "apigee_policy": "SC-JDBC-Policy-Callout",
+                "propertyset_Selector": "jdbc.properties",
+                "datasource_id": "{jdbc.datasource_id}",
+                "driver": "{jdbc.driver}",
+                "operation_type": "{jdbc.operation_type}",
+                "success": "{jdbc.success}",
+                "execution_time_ms": "{jdbc.execution_time_ms}",
+                "extracted_context_variables": {
+                  "jdbc.row_count": "{jdbc.row_count}",
+                  "jdbc.truncated": "{jdbc.truncated}",
+                  "jdbc.last_insert_id": "{jdbc.last_insert_id}",
+                  "jdbc.full_name": "{jdbc.full_name}",
+                  "jdbc.email": "{jdbc.email}",
+                  "jdbc.plan_tier": "{jdbc.plan_tier}",
+                  "jdbc.status": "{jdbc.status}",
+                  "jdbc.upi": "{jdbc.upi}",
+                  "jdbc.crc64": "{jdbc.crc64}",
+                  "jdbc.seq_short": "{jdbc.seq_short}",
+                  "jdbc.account_id": "{jdbc.account_id}",
+                  "jdbc.company_name": "{jdbc.company_name}",
+                  "jdbc.balance_eur": "{jdbc.balance_eur}"
+                },
+                "injected_backend_headers": {
+                  "X-JDBC-Datasource": "{request.header.X-JDBC-Datasource.values.string}",
+                  "X-JDBC-Driver": "{request.header.X-JDBC-Driver.values.string}",
+                  "X-JDBC-Row-Count": "{request.header.X-JDBC-Row-Count.values.string}",
+                  "X-JDBC-Subscriber-Name": "{request.header.X-JDBC-Subscriber-Name.values.string}",
+                  "X-JDBC-Subscriber-Email": "{request.header.X-JDBC-Subscriber-Email.values.string}",
+                  "X-JDBC-Plan-Tier": "{request.header.X-JDBC-Plan-Tier.values.string}"
+                },
+                "rows": {jdbc.rows_json}
+              }
+          StatusCode:
+            _text: "200"
+        IgnoreUnresolvedVariables:
+          _text: "true"
+        AssignTo:
+          _attributes:
+            createNew: "false"
+            transport: http
+            type: response
+
+resources:
+  - name: jdbc.properties
+    type: properties
+    content: |
+      # Apigee PropertySet: jdbc.properties
+      # Maps logical proxy routes to pre-established JDBC datasource IDs (never hardcoded in ServiceCallout XML)
+      datasource_id=enterprise-sqlite
+      external_datasource_id=pg-rna-public
+      private_vm_datasource_id=private-vm-postgres
+      variable_prefix=jdbc
+      max_rows=100
+

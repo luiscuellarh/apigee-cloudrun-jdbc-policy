@@ -1,0 +1,189 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1140 640" width="100%" height="100%" font-family="'Google Sans', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif">
+  <defs>
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#eff6ff"/>
+    </linearGradient>
+    <linearGradient id="apigeeGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#1a73e8"/>
+      <stop offset="100%" stop-color="#174ea6"/>
+    </linearGradient>
+    <linearGradient id="crGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#0f9d58"/>
+      <stop offset="100%" stop-color="#0b8043"/>
+    </linearGradient>
+    <linearGradient id="dbGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#7c3aed"/>
+      <stop offset="100%" stop-color="#5b21b6"/>
+    </linearGradient>
+    <marker id="arrowBlue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#1a73e8"/>
+    </marker>
+    <marker id="arrowGreen" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#0f9d58"/>
+    </marker>
+    <marker id="arrowAmber" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#d97706"/>
+    </marker>
+    <marker id="arrowPurple" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 1 L 10 5 L 0 9 z" fill="#7c3aed"/>
+    </marker>
+    <filter id="shadow" x="-5%" y="-5%" width="110%" height="110%">
+      <feDropShadow dx="0" dy="3" stdDeviation="4" flood-color="#0f172a" flood-opacity="0.08"/>
+    </filter>
+  </defs>
+
+  <rect width="1140" height="640" rx="16" fill="url(#bgGrad)" stroke="#cbd5e1" stroke-width="1.5"/>
+
+  <!-- Header Banner -->
+  <rect x="24" y="18" width="1092" height="54" rx="10" fill="#0f172a"/>
+  <text x="44" y="43" fill="#ffffff" font-size="17" font-weight="700">Apigee X + Private Cloud Run — Persistent Multi-Datasource JDBC/ODBC Connector &amp; Policy</text>
+  <text x="44" y="62" fill="#94a3b8" font-size="12">Step 1: Configure Connection (Encrypted KVM + Warm Pool) • Step 2: Consume via PropertySet (jdbc.properties) + ServiceCallout</text>
+
+  <!-- Left Column: Step 1 & Step 2 -->
+  <rect x="26" y="90" width="196" height="236" rx="12" fill="#ffffff" stroke="#94a3b8" stroke-width="1.5" filter="url(#shadow)"/>
+  <rect x="26" y="90" width="196" height="36" rx="12" fill="#334155"/>
+  <text x="124" y="113" text-anchor="middle" fill="#ffffff" font-size="12.5" font-weight="700">Step 1. Configure Connection</text>
+  <text x="38" y="146" fill="#1e293b" font-size="12" font-weight="600">Platform Admin API</text>
+  <text x="38" y="166" fill="#475569" font-size="11">• POST /v1/jdbc-admin/datasources</text>
+  <text x="38" y="184" fill="#475569" font-size="11">• GET /v1/jdbc-admin/datasources</text>
+  <text x="38" y="202" fill="#475569" font-size="11">• DELETE /v1/jdbc-admin/datasources</text>
+  <rect x="38" y="216" width="172" height="96" rx="8" fill="#f1f5f9" stroke="#cbd5e1"/>
+  <text x="48" y="234" fill="#0f172a" font-size="10.5" font-weight="700">Pre-Established Once:</text>
+  <text x="48" y="250" fill="#334155" font-size="9.5" font-family="monospace">datasource_id: "pg-public"</text>
+  <text x="48" y="264" fill="#334155" font-size="9.5" font-family="monospace">jdbc_url: "jdbc:postgresql:..."</text>
+  <text x="48" y="278" fill="#334155" font-size="9.5" font-family="monospace">username + password</text>
+  <text x="48" y="292" fill="#334155" font-size="9.5" font-family="monospace">min_pool: 3, max_pool: 15</text>
+  <text x="48" y="305" fill="#334155" font-size="9.5" font-family="monospace">keep_alive_sec: 30</text>
+
+  <rect x="26" y="346" width="196" height="270" rx="12" fill="#ffffff" stroke="#94a3b8" stroke-width="1.5" filter="url(#shadow)"/>
+  <rect x="26" y="346" width="196" height="36" rx="12" fill="#1e40af"/>
+  <text x="124" y="369" text-anchor="middle" fill="#ffffff" font-size="12.5" font-weight="700">Step 2. Consume from Proxy</text>
+  <text x="38" y="402" fill="#1e293b" font-size="12" font-weight="600">Standard Business API Calls</text>
+  <text x="38" y="422" fill="#475569" font-size="11">• GET /v1/jdbc-policy/subscribers</text>
+  <text x="38" y="440" fill="#475569" font-size="11">• POST /v1/jdbc-policy/orders</text>
+  <text x="38" y="458" fill="#475569" font-size="11">• GET /v1/jdbc-policy/rna</text>
+  <rect x="38" y="476" width="172" height="124" rx="8" fill="#eff6ff" stroke="#93c5fd"/>
+  <text x="48" y="494" fill="#1e3a8a" font-size="10.5" font-weight="700">Zero DB Details in Client:</text>
+  <text x="48" y="512" fill="#475569" font-size="10">• Client sends only business</text>
+  <text x="48" y="527" fill="#475569" font-size="10">  inputs (e.g. ?id=1001)</text>
+  <text x="48" y="545" fill="#475569" font-size="10">• Target DB is configured in</text>
+  <text x="48" y="560" fill="#475569" font-size="10">  jdbc.properties (PropertySet)</text>
+  <text x="48" y="575" fill="#475569" font-size="10">  — never hardcoded in XML</text>
+
+  <!-- Middle Left Column: Apigee X Organization -->
+  <rect x="256" y="90" width="322" height="526" rx="14" fill="#ffffff" stroke="#1a73e8" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="256" y="90" width="322" height="40" rx="14" fill="url(#apigeeGrad)"/>
+  <text x="417" y="115" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="700">Apigee X Runtime Plane (AFT Deployed)</text>
+
+  <!-- Proxy 1 Box -->
+  <rect x="272" y="142" width="290" height="184" rx="10" fill="#f8fafc" stroke="#64748b" stroke-width="1.5"/>
+  <text x="284" y="163" fill="#0f172a" font-size="12.5" font-weight="700">Proxy 1: jdbc-admin-v1 (/v1/jdbc-admin)</text>
+  <text x="284" y="180" fill="#475569" font-size="11">Role: Register Connection &amp; Open Warm Pool</text>
+  <rect x="284" y="190" width="266" height="60" rx="6" fill="#fef3c7" stroke="#f59e0b"/>
+  <text x="294" y="207" fill="#92400e" font-size="11" font-weight="700">Encrypted Environment KVM (Credentials Store)</text>
+  <text x="294" y="223" fill="#78350f" font-size="10" font-family="monospace">jdbc-datasources-kvm (Key: datasource_id)</text>
+  <text x="294" y="238" fill="#78350f" font-size="10">Encrypted source of truth read by Cloud Run</text>
+  <rect x="284" y="258" width="266" height="56" rx="6" fill="#e0f2fe" stroke="#0284c7"/>
+  <text x="294" y="275" fill="#075985" font-size="11" font-weight="700">TargetEndpoint -> Private Cloud Run</text>
+  <text x="294" y="291" fill="#0369a1" font-size="10" font-family="monospace">&lt;GoogleIDToken&gt;&lt;Audience&gt;jdbc-policy-service</text>
+  <text x="294" y="305" fill="#0369a1" font-size="10">Opens min_pool_size sockets &amp; starts Keep-Alive</text>
+
+  <!-- Proxy 2 Box -->
+  <rect x="272" y="338" width="290" height="264" rx="10" fill="#f8fafc" stroke="#1a73e8" stroke-width="1.5"/>
+  <text x="284" y="358" fill="#1e3a8a" font-size="12.5" font-weight="700">Proxy 2: jdbc-policy-callout-v1 (/v1/jdbc-policy)</text>
+  <text x="284" y="374" fill="#475569" font-size="11">Role: PropertySet Config + Single ServiceCallout</text>
+
+  <rect x="284" y="384" width="266" height="56" rx="6" fill="#e0e7ff" stroke="#4f46e5"/>
+  <text x="294" y="401" fill="#312e81" font-size="11" font-weight="700">PropertySet: jdbc.properties (DB Selector)</text>
+  <text x="294" y="416" fill="#3730a3" font-size="9.5" font-family="monospace">datasource_id=enterprise-sqlite</text>
+  <text x="294" y="430" fill="#3730a3" font-size="9.5" font-family="monospace">external_datasource_id=pg-public | max_rows=100</text>
+
+  <rect x="284" y="448" width="266" height="72" rx="6" fill="#dbeafe" stroke="#2563eb"/>
+  <text x="294" y="465" fill="#1e40af" font-size="11" font-weight="700">Single Policy: SC-JDBC-Policy-Callout</text>
+  <text x="294" y="481" fill="#1d4ed8" font-size="9.5" font-family="monospace">"datasource_id": "{propertyset.jdbc.datasource_id}"</text>
+  <text x="294" y="496" fill="#1d4ed8" font-size="9.5" font-family="monospace">"sql": "SELECT ... WHERE id = $[id]"</text>
+  <text x="294" y="511" fill="#1d4ed8" font-size="9.5" font-family="monospace">"params": {"id": "{request.queryparam.id}"}</text>
+
+  <rect x="284" y="528" width="266" height="64" rx="6" fill="#f1f5f9" stroke="#94a3b8"/>
+  <text x="294" y="544" fill="#0f172a" font-size="11" font-weight="700">Context Mapping &amp; Upstream Injection</text>
+  <text x="294" y="560" fill="#334155" font-size="10" font-family="monospace">EV-JDBC-Context-Variables (jdbc.*)</text>
+  <text x="294" y="575" fill="#334155" font-size="10" font-family="monospace">AM-Inject-JDBC-Headers (X-JDBC-*)</text>
+
+  <!-- Middle Right Column: Private Cloud Run Service -->
+  <rect x="614" y="90" width="256" height="526" rx="14" fill="#ffffff" stroke="#0f9d58" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="614" y="90" width="256" height="40" rx="14" fill="url(#crGrad)"/>
+  <text x="742" y="115" text-anchor="middle" fill="#ffffff" font-size="13.5" font-weight="700">Private Cloud Run (Always-Warm Pool)</text>
+
+  <rect x="628" y="142" width="228" height="66" rx="8" fill="#ecfdf5" stroke="#10b981"/>
+  <text x="638" y="160" fill="#065f46" font-size="11" font-weight="700">Zero-Trust IAM &amp; OIDC Gate</text>
+  <text x="638" y="176" fill="#047857" font-size="10" font-family="monospace">--no-allow-unauthenticated</text>
+  <text x="638" y="190" fill="#047857" font-size="10" font-family="monospace">--min-instances=1 (Always Warm)</text>
+  <text x="638" y="203" fill="#047857" font-size="10" font-family="monospace">Audience: "jdbc-policy-service"</text>
+
+  <rect x="628" y="218" width="228" height="178" rx="8" fill="#f8fafc" stroke="#cbd5e1"/>
+  <text x="638" y="238" fill="#0f172a" font-size="11.5" font-weight="700">Persistent Pool &amp; Keep-Alive Engine</text>
+  <text x="638" y="256" fill="#334155" font-size="10.5">1. Pre-Opened Warm Connections</text>
+  <text x="648" y="270" fill="#475569" font-size="10">   Opens min_pool_size (3) sockets on setup</text>
+  <text x="638" y="288" fill="#334155" font-size="10.5">2. Active Keep-Alive Heartbeat (30s)</text>
+  <text x="648" y="302" fill="#475569" font-size="10">   Runs SELECT 1 / PingContext + TCP KeepAlive</text>
+  <text x="648" y="316" fill="#475569" font-size="10">   so firewalls never drop idle DB sockets</text>
+  <text x="638" y="334" fill="#334155" font-size="10.5">3. Auto-Sync from Apigee KVM on Boot</text>
+  <text x="648" y="348" fill="#475569" font-size="10">   Reads jdbc-datasources-kvm on startup</text>
+  <text x="638" y="366" fill="#334155" font-size="10.5">4. Full SQL Freedom + Prepared Params</text>
+  <text x="648" y="380" fill="#475569" font-size="10">   SELECT, JOIN, DML, CALL ($[var]-&gt;?, $1)</text>
+
+  <rect x="628" y="406" width="228" height="194" rx="8" fill="#f0fdf4" stroke="#22c55e"/>
+  <text x="638" y="426" fill="#14532d" font-size="11.5" font-weight="700">Connection Reuse &amp; Hybrid Egress</text>
+  <text x="638" y="444" fill="#166534" font-size="10" font-family="monospace">0 TCP/TLS Handshakes per API Call</text>
+  <text x="638" y="462" fill="#15803d" font-size="10">• Borrows warm socket in &lt;1 ms</text>
+  <text x="638" y="478" fill="#15803d" font-size="10">• Auto-reconnects if DB restarts</text>
+  <text x="638" y="494" fill="#15803d" font-size="10">• Direct VPC Egress for On-Prem DBs:</text>
+  <rect x="638" y="504" width="208" height="82" rx="6" fill="#dcfce7" stroke="#16a34a"/>
+  <text x="646" y="522" fill="#14532d" font-size="10" font-weight="700">--network / --subnet</text>
+  <text x="646" y="538" fill="#166534" font-size="9.5" font-family="monospace">--vpc-egress=private-ranges-only</text>
+  <text x="646" y="554" fill="#14532d" font-size="9.5">Persistent TCP sockets to 10.x.x.x</text>
+  <text x="646" y="569" fill="#14532d" font-size="9.5">via Cloud VPN / Cloud Interconnect</text>
+
+  <!-- Right Column: On-Premises & Cloud Databases -->
+  <rect x="904" y="90" width="212" height="526" rx="14" fill="#ffffff" stroke="#7c3aed" stroke-width="2" filter="url(#shadow)"/>
+  <rect x="904" y="90" width="212" height="40" rx="14" fill="url(#dbGrad)"/>
+  <text x="1010" y="115" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="700">On-Prem &amp; Cloud DBs</text>
+
+  <rect x="918" y="144" width="184" height="176" rx="8" fill="#fef2f2" stroke="#dc2626" stroke-width="1.5"/>
+  <text x="1010" y="166" text-anchor="middle" fill="#991b1b" font-size="12" font-weight="700">On-Premises Data Center</text>
+  <text x="1010" y="182" text-anchor="middle" fill="#b91c1c" font-size="10">(Via Cloud VPN / Interconnect)</text>
+  <rect x="928" y="192" width="164" height="54" rx="6" fill="#ffffff" stroke="#fca5a5"/>
+  <text x="1010" y="210" text-anchor="middle" fill="#7f1d1d" font-size="11" font-weight="700">Oracle / SQL Server</text>
+  <text x="1010" y="226" text-anchor="middle" fill="#991b1b" font-size="9.5" font-family="monospace">10.x.x.x:1521 / :1433</text>
+  <text x="1010" y="239" text-anchor="middle" fill="#991b1b" font-size="9.5">go-ora/v2 &amp; go-mssqldb</text>
+  <rect x="928" y="254" width="164" height="54" rx="6" fill="#ffffff" stroke="#fca5a5"/>
+  <text x="1010" y="272" text-anchor="middle" fill="#7f1d1d" font-size="11" font-weight="700">On-Prem Postgres / MySQL</text>
+  <text x="1010" y="288" text-anchor="middle" fill="#991b1b" font-size="9.5" font-family="monospace">10.x.x.x:5432 / :3306</text>
+  <text x="1010" y="301" fill="#991b1b" font-size="9.5">pgx/v5 &amp; go-sql-driver/mysql</text>
+
+  <rect x="918" y="336" width="184" height="112" rx="8" fill="#f5f3ff" stroke="#8b5cf6"/>
+  <text x="1010" y="358" text-anchor="middle" fill="#4c1d95" font-size="12" font-weight="700">Cloud / External SQL DBs</text>
+  <text x="1010" y="378" text-anchor="middle" fill="#6d28d9" font-size="10">• Cloud SQL (Private IP / PSC)</text>
+  <text x="1010" y="396" text-anchor="middle" fill="#6d28d9" font-size="10">• AlloyDB / Spanner PG</text>
+  <text x="1010" y="414" text-anchor="middle" fill="#6d28d9" font-size="10">• Public PostgreSQL / MySQL</text>
+  <text x="1010" y="432" text-anchor="middle" fill="#6d28d9" font-size="9.5" font-family="monospace">  (e.g. hh-pgsql-public.ebi.ac.uk)</text>
+
+  <rect x="918" y="464" width="184" height="136" rx="8" fill="#faf5ff" stroke="#a855f7" stroke-dasharray="4,3"/>
+  <text x="1010" y="486" text-anchor="middle" fill="#581c87" font-size="11.5" font-weight="700">Built-In Self-Contained DB</text>
+  <text x="1010" y="506" text-anchor="middle" fill="#6b21a8" font-size="10" font-family="monospace">modernc.org/sqlite</text>
+  <text x="1010" y="524" text-anchor="middle" fill="#6b21a8" font-size="10">Pre-seeded subscribers,</text>
+  <text x="1010" y="540" text-anchor="middle" fill="#6b21a8" font-size="10">orders &amp; audit tables</text>
+  <text x="1010" y="556" text-anchor="middle" fill="#6b21a8" font-size="10">for instant zero-dependency</text>
+  <text x="1010" y="572" text-anchor="middle" fill="#6b21a8" font-size="10">SELECT / DML / tx verification</text>
+
+  <!-- Connectors -->
+  <line x1="222" y1="205" x2="268" y2="205" stroke="#1a73e8" stroke-width="2.2" marker-end="url(#arrowBlue)"/>
+  <line x1="222" y1="440" x2="268" y2="440" stroke="#1a73e8" stroke-width="2.2" marker-end="url(#arrowBlue)"/>
+  <line x1="562" y1="285" x2="610" y2="285" stroke="#0f9d58" stroke-width="2.2" marker-end="url(#arrowGreen)"/>
+  <line x1="550" y1="225" x2="624" y2="340" stroke="#d97706" stroke-width="2" stroke-dasharray="4,3" marker-end="url(#arrowAmber)"/>
+  <line x1="562" y1="484" x2="610" y2="484" stroke="#0f9d58" stroke-width="2.2" marker-end="url(#arrowGreen)"/>
+  <line x1="856" y1="545" x2="914" y2="230" stroke="#7c3aed" stroke-width="2.2" marker-end="url(#arrowPurple)"/>
+  <line x1="856" y1="390" x2="914" y2="390" stroke="#7c3aed" stroke-width="2" marker-end="url(#arrowPurple)"/>
+  <line x1="856" y1="500" x2="914" y2="520" stroke="#7c3aed" stroke-width="2" marker-end="url(#arrowPurple)"/>
+</svg>

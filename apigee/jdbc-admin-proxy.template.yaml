@@ -1,0 +1,162 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/apigee/apigee-templater/main/schema/gateway.schema.1.0.json
+name: __ADMIN_PROXY_NAME__
+displayName: __ADMIN_PROXY_NAME__
+type: proxy
+gateway: apigee
+schemaVersion: 1.0.0
+description: JDBC Admin Proxy persisting datasource connection schemas in Encrypted Apigee KVM (__KVM_NAME__) and routing to Cloud Run TargetEndpoint to open persistent warm connection pools.
+
+endpoints:
+  - name: default
+    basePath: __ADMIN_BASE_PATH__
+    routes:
+      - name: default
+        target: default
+    flows:
+      # Step 1: Register or Update a JDBC Datasource (POST /v1/jdbc-admin/datasources)
+      #   1. Extract $.datasource_id from JSON payload
+      #   2. Validate datasource_id is present (RF-Admin-Missing-ID)
+      #   3. Persist encrypted JSON in Apigee KVM (__KVM_NAME__)
+      #   4. Route to Cloud Run TargetEndpoint (POST /v1/jdbc/datasources) to open warm pool & start Keep-Alive
+      - name: Register-JDBC-Datasource
+        mode: Request
+        condition: (proxy.pathsuffix MatchesPath "/datasources") and ((request.verb = "POST") or (request.verb = "PUT"))
+        steps:
+          - name: EV-Extract-Datasource-ID
+            condition: (request.content != null) and (request.content != "")
+          - name: RF-Admin-Missing-ID
+            condition: (admin.datasource_id = null) or (admin.datasource_id = "")
+          - name: KVM-Put-Datasource
+            condition: (admin.datasource_id != null) and (admin.datasource_id != "")
+
+      # Step 1B: Delete a JDBC Datasource (DELETE /v1/jdbc-admin/datasources?id=<datasource_id>)
+      - name: Delete-JDBC-Datasource
+        mode: Request
+        condition: (proxy.pathsuffix MatchesPath "/datasources") and (request.verb = "DELETE")
+        steps:
+          - name: RF-Admin-Missing-ID
+            condition: (request.queryparam.id = null) or (request.queryparam.id = "")
+          - name: KVM-Delete-Datasource
+            condition: (request.queryparam.id != null) and (request.queryparam.id != "")
+
+targets:
+  - name: default
+    url: __CLOUD_RUN_URL__/v1/jdbc
+    httpTargetConnection:
+      Properties:
+        Property:
+          - metadata:
+              name: success.codes
+            _text: 1xx,2xx,3xx,4xx
+      Authentication:
+        GoogleIDToken:
+          Audience: __CUSTOM_AUDIENCE__
+      URL: __CLOUD_RUN_URL__/v1/jdbc
+    flows: []
+
+policies:
+  # 1. Extract datasource_id ($.datasource_id) for KVM persistence
+  - name: EV-Extract-Datasource-ID
+    type: ExtractVariables
+    content:
+      ExtractVariables:
+        _attributes:
+          async: "false"
+          continueOnError: "false"
+          enabled: "true"
+          name: EV-Extract-Datasource-ID
+        DisplayName:
+          _text: EV-Extract-Datasource-ID
+        Source:
+          _attributes:
+            clearPayload: "false"
+          _text: request
+        IgnoreUnresolvedVariables:
+          _text: "true"
+        JSONPayload:
+          Variable:
+            - _attributes:
+                name: admin.datasource_id
+                type: string
+              JSONPath:
+                _text: $.datasource_id
+
+  # 2. Guard against missing datasource_id before KVM operations
+  - name: RF-Admin-Missing-ID
+    type: RaiseFault
+    content:
+      RaiseFault:
+        _attributes:
+          async: "false"
+          continueOnError: "false"
+          enabled: "true"
+          name: RF-Admin-Missing-ID
+        DisplayName:
+          _text: RF-Admin-Missing-ID
+        FaultResponse:
+          Set:
+            Headers:
+              Header:
+                _attributes:
+                  name: Content-Type
+                _text: application/json
+            Payload:
+              _attributes:
+                contentType: application/json
+              _text: |
+                {
+                  "error": "jdbc_admin_validation_error",
+                  "error_code": "MISSING_DATASOURCE_ID",
+                  "message": "datasource_id (in JSON body for POST or ?id= query param for DELETE) is required"
+                }
+            StatusCode:
+              _text: "400"
+        IgnoreUnresolvedVariables:
+          _text: "true"
+
+  # 3. Persist Datasource JSON in Encrypted Apigee KVM (__KVM_NAME__)
+  - name: KVM-Put-Datasource
+    type: KeyValueMapOperations
+    content:
+      KeyValueMapOperations:
+        _attributes:
+          async: "false"
+          continueOnError: "false"
+          enabled: "true"
+          name: KVM-Put-Datasource
+          mapIdentifier: __KVM_NAME__
+        DisplayName:
+          _text: KVM-Put-Datasource
+        Scope:
+          _text: environment
+        Put:
+          _attributes:
+            override: "true"
+          Key:
+            Parameter:
+              _attributes:
+                ref: admin.datasource_id
+          Value:
+            _attributes:
+              ref: request.content
+
+  # 4. Delete Datasource Entry from Encrypted Apigee KVM (__KVM_NAME__)
+  - name: KVM-Delete-Datasource
+    type: KeyValueMapOperations
+    content:
+      KeyValueMapOperations:
+        _attributes:
+          async: "false"
+          continueOnError: "true"
+          enabled: "true"
+          name: KVM-Delete-Datasource
+          mapIdentifier: __KVM_NAME__
+        DisplayName:
+          _text: KVM-Delete-Datasource
+        Scope:
+          _text: environment
+        Delete:
+          Key:
+            Parameter:
+              _attributes:
+                ref: request.queryparam.id
